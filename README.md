@@ -1,0 +1,1 @@
+Not Scanning Emposed Cards 
