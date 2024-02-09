@@ -2,13 +2,13 @@ class CreditCard {
   String cardNumber;
   String cardType;
   String cvv;
-  String country;
+  String holderName;
 
   CreditCard({
     required this.cardNumber,
     required this.cardType,
     required this.cvv,
-    required this.country,
+    required this.holderName,
   });
 
   Map<String, dynamic> toJson() {
@@ -16,7 +16,7 @@ class CreditCard {
       'cardNumber': cardNumber,
       'cardType': cardType,
       'cvv': cvv,
-      'country': country
+      'holderName': holderName
     };
   }
 
@@ -25,7 +25,7 @@ class CreditCard {
       cardNumber: json['cardNumber'],
       cardType: json['cardType'],
       cvv: json['cvv'],
-      country: json['country'],
+      holderName: json['holderName'],
     );
   }
 }

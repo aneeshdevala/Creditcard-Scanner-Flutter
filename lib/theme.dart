@@ -8,10 +8,10 @@ ThemeData lightTheme = ThemeData(
     bodyLarge: TextStyle(fontSize: 12, color: Colors.black87),
   ),
   appBarTheme: const AppBarTheme(
-    color: Colors.green,
+    color: Colors.blue,
   ),
   colorScheme: ColorScheme.fromSeed(
-    seedColor: Colors.green,
+    seedColor: Colors.blue,
   ),
 );
 
@@ -22,10 +22,10 @@ ThemeData darkTheme = ThemeData(
     bodyLarge: TextStyle(fontSize: 18, color: Colors.white70),
   ),
   //AppBar Theme
-  appBarTheme: const AppBarTheme(color: Colors.green),
+  appBarTheme: const AppBarTheme(color: Colors.blue),
   //Colour Scheme
   colorScheme: ColorScheme.fromSeed(
-    seedColor: const Color(0xFF4CAF50),
+    seedColor: Color.fromARGB(255, 87, 154, 89),
     brightness: Brightness.dark,
   ),
 );

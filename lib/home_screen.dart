@@ -1,16 +1,17 @@
 import 'package:country_picker/country_picker.dart';
-import 'package:credit_card_capture_app/country_screen.dart';
 import 'package:credit_card_capture_app/credit_card_object.dart';
 import 'package:credit_card_capture_app/save_card_tolocal.dart';
+import 'package:credit_card_scanner/credit_card_scanner.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:line_icons/line_icons.dart';
 import 'package:mask_text_input_formatter/mask_text_input_formatter.dart';
-import 'package:credit_card_scanner/credit_card_scanner.dart';
 
 //initialize variables
 TextEditingController teCardNumber = TextEditingController();
 TextEditingController teCVV = TextEditingController();
+TextEditingController teHolderName = TextEditingController();
+
 TextEditingController teFilter = TextEditingController();
 
 List<CreditCard> creditCardList = [];
@@ -25,7 +26,6 @@ var validCard = false;
 var cardType = "";
 
 List<Country> bannedCountries = [];
-var selectedCounty = 'Select Country';
 
 //Setup masks for textformfields
 var creditCardMaskFormatter = MaskTextInputFormatter(
@@ -48,475 +48,506 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
       //appbar
       appBar: AppBar(
         actions: [
-          IconButton(
-            icon: const Icon(LineIcons.globeWithAfricaShown),
-            onPressed: () {
-              Navigator.push(
-                context,
-                PageRouteBuilder(
-                  pageBuilder: (context, animation, secondaryAnimation) =>
-                      const CountryScreen(),
-                  transitionsBuilder:
-                      (context, animation, secondaryAnimation, child) {
-                    var begin = const Offset(1.0, 0.0);
-                    var end = Offset.zero;
-                    var curve = Curves.ease;
+          // IconButton(
+          //   icon: const Icon(LineIcons.globeWithAfricaShown),
+          //   onPressed: () {
+          //     Navigator.push(
+          //       context,
+          //       PageRouteBuilder(
+          //         pageBuilder: (context, animation, secondaryAnimation) =>
+          //             const CountryScreen(),
+          //         transitionsBuilder:
+          //             (context, animation, secondaryAnimation, child) {
+          //           var begin = const Offset(1.0, 0.0);
+          //           var end = Offset.zero;
+          //           var curve = Curves.ease;
 
-                    var tween = Tween(begin: begin, end: end)
-                        .chain(CurveTween(curve: curve));
+          //           var tween = Tween(begin: begin, end: end)
+          //               .chain(CurveTween(curve: curve));
 
-                    return SlideTransition(
-                      position: animation.drive(tween),
-                      child: child,
-                    );
-                  },
-                ),
-              );
-            },
-          ),
+          //           return SlideTransition(
+          //             position: animation.drive(tween),
+          //             child: child,
+          //           );
+          //         },
+          //       ),
+          //     );
+          //   },
+          // ),
         ],
-        title: const Text('Credit Card Capturing'),
+        title: const Text(
+          'Credit Card Scanner',
+        ),
+        centerTitle: true,
       ),
       //body
       //in scrollview for if screens are or small
       body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(4.0),
-                  child: SizedBox(
-                    height: 160,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Padding(
-                          padding: EdgeInsets.all(8.0),
-                          child: Text('Credit Card Number:'),
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            SizedBox(
-                              width: 280,
-                              height: 40,
-                              child: TextFormField(
-                                controller: teCardNumber,
-                                onChanged: (value) {
-                                  //Set state to load icon and card type
-                                  setState(() {
-                                    cardTypeWidget = getCardType(value);
-                                  });
-                                },
-                                onFieldSubmitted: (value) {
-                                  //Set state to load icon and card type
-                                  setState(() {
-                                    cardTypeWidget = getCardType(value);
-                                  });
-                                },
-                                //keyboard only allows numbers
-                                keyboardType: TextInputType.number,
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.digitsOnly,
-                                  creditCardMaskFormatter
-                                ],
-                                textAlign: TextAlign.start,
-                                decoration: InputDecoration(
-                                    suffixIcon: cardTypeWidget,
-                                    contentPadding: const EdgeInsets.symmetric(
-                                        horizontal: 16),
-                                    hintText: '0000 0000 0000 0000',
-                                    border: OutlineInputBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(10))),
+        child: Padding(
+          padding: const EdgeInsets.only(top: 20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: SizedBox(
+                      height: 160,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: Text('Credit Card Number:'),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              SizedBox(
+                                width: 250,
+                                height: 40,
+                                child: TextFormField(
+                                  controller: teCardNumber,
+                                  onChanged: (value) {
+                                    //Set state to load icon and card type
+                                    setState(() {
+                                      cardTypeWidget = getCardType(value);
+                                    });
+                                  },
+                                  onFieldSubmitted: (value) {
+                                    //Set state to load icon and card type
+                                    setState(() {
+                                      cardTypeWidget = getCardType(value);
+                                    });
+                                  },
+                                  //keyboard only allows numbers
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                    creditCardMaskFormatter
+                                  ],
+                                  textAlign: TextAlign.start,
+                                  decoration: InputDecoration(
+                                      suffixIcon: cardTypeWidget,
+                                      contentPadding:
+                                          const EdgeInsets.symmetric(
+                                              horizontal: 16),
+                                      hintText: '0000 0000 0000 0000',
+                                      border: OutlineInputBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(10))),
+                                ),
                               ),
-                            ),
-                            ElevatedButton(
-                                //using onsync to wait for retrival of scan data
-                                onPressed: () async {
-                                  var cardDetails =
-                                      await CardScanner.scanCard();
-                                  setState(() {
-                                    if (cardDetails != null) {
-                                      final text = cardDetails.cardNumber
-                                          .replaceAllMapped(RegExp(r".{4}"),
-                                              (match) => "${match.group(0)} ");
-                                      teCardNumber.text = text;
-                                      cardTypeWidget =
-                                          getCardType(teCardNumber.text);
-                                    }
-                                  });
-                                },
-                                child: const Text('Scan Card')),
-                          ],
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Padding(
-                                  padding: EdgeInsets.all(8.0),
-                                  child: Text('CVV:'),
-                                ),
-                                SizedBox(
-                                  height: 40,
-                                  width: 100,
-                                  child: TextFormField(
-                                    controller: teCVV,
-                                    keyboardType: TextInputType.number,
-                                    inputFormatters: [
-                                      FilteringTextInputFormatter.digitsOnly,
-                                      cVVMaskFormatter
-                                    ],
-                                    textAlign: TextAlign.start,
-                                    decoration: InputDecoration(
-                                        suffixIcon: IconButton(
-                                            onPressed: () {
-                                              showDialog(
-                                                  context: context,
-                                                  builder:
-                                                      (BuildContext context) {
-                                                    return AlertDialog(
-                                                      content: SizedBox(
-                                                        width: 200,
-                                                        height: 300,
-                                                        child: Column(
-                                                          children: [
-                                                            const Text(
-                                                                'The CVV code is usually located on the back of the card, although in some cases it may be found on the front.'),
-                                                            Image.asset(
-                                                                "assets/images/cvv.png"),
-                                                          ],
-                                                        ),
-                                                      ),
-                                                      actions: [
-                                                        TextButton(
-                                                            onPressed: () {
-                                                              Navigator.pop(
-                                                                  context);
-                                                            },
-                                                            child: const Text(
-                                                                'Ok'))
-                                                      ],
-                                                    );
-                                                  });
-                                            },
-                                            icon: const Icon(
-                                                LineIcons.questionCircle)),
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                                horizontal: 16),
-                                        hintText: '000',
-                                        border: OutlineInputBorder(
-                                            borderRadius:
-                                                BorderRadius.circular(10))),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Padding(
-                                  padding: EdgeInsets.all(8.0),
-                                  child: Text('Country Issued:'),
-                                ),
-                                SizedBox(
-                                    height: 40,
-                                    width: 250,
-                                    child: ElevatedButton(
-                                      onPressed: () {
-                                        List<String> bannedCodes = [];
-                                        for (var country in bannedCountries) {
-                                          bannedCodes.add(country.countryCode);
+                              SizedBox(
+                                width: 100,
+                                child: ElevatedButton(
+                                    //using onsync to wait for retrival of scan data
+                                    onPressed: () async {
+                                      var cardDetails =
+                                          await CardScanner.scanCard();
+                                      setState(() {
+                                        if (cardDetails != null) {
+                                          final text = cardDetails.cardNumber
+                                              .replaceAllMapped(
+                                                  RegExp(r".{4}"),
+                                                  (match) =>
+                                                      "${match.group(0)} ");
+                                          teCardNumber.text = text;
+                                          cardTypeWidget =
+                                              getCardType(teCardNumber.text);
                                         }
-                                        showCountryPicker(
-                                            countryListTheme:
-                                                const CountryListThemeData(
-                                                    bottomSheetHeight: 500),
-                                            context: context,
-                                            exclude: bannedCodes,
-                                            onSelect: (Country country) =>
-                                                setState(() {
-                                                  selectedCounty =
-                                                      '${country.flagEmoji} ${country.name}';
-                                                }));
-                                      },
-                                      child: Text(selectedCounty),
-                                    ))
-                              ],
-                            )
-                          ],
-                        )
-                      ],
+                                      });
+                                    },
+                                    child: const Text('Scan ')),
+                              ),
+                            ],
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text('CVV:'),
+                                  ),
+                                  SizedBox(
+                                    height: 40,
+                                    width: size.width * 0.26,
+                                    child: TextFormField(
+                                      controller: teCVV,
+                                      keyboardType: TextInputType.number,
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly,
+                                        cVVMaskFormatter
+                                      ],
+                                      textAlign: TextAlign.start,
+                                      decoration: InputDecoration(
+                                          suffixIcon: IconButton(
+                                              onPressed: () {
+                                                showDialog(
+                                                    context: context,
+                                                    builder:
+                                                        (BuildContext context) {
+                                                      return AlertDialog(
+                                                        content: SizedBox(
+                                                          width: 200,
+                                                          height: 300,
+                                                          child: Column(
+                                                            children: [
+                                                              const Text(
+                                                                  'The CVV code is usually located on the back of the card, although in some cases it may be found on the front.'),
+                                                              Image.asset(
+                                                                  "assets/images/cvv.png"),
+                                                            ],
+                                                          ),
+                                                        ),
+                                                        actions: [
+                                                          TextButton(
+                                                              onPressed: () {
+                                                                Navigator.pop(
+                                                                    context);
+                                                              },
+                                                              child: const Text(
+                                                                  'Ok'))
+                                                        ],
+                                                      );
+                                                    });
+                                              },
+                                              icon: const Icon(
+                                                  LineIcons.questionCircle)),
+                                          contentPadding:
+                                              const EdgeInsets.symmetric(
+                                                  horizontal: 16),
+                                          hintText: '000',
+                                          border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10))),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Padding(
+                                    padding: EdgeInsets.all(8.0),
+                                    child: Text('Card Holder Name:'),
+                                  ),
+                                  SizedBox(
+                                    height: 40,
+                                    width: size.width * 0.60,
+                                    child: TextFormField(
+                                      controller: teHolderName,
+                                      textAlign: TextAlign.start,
+                                      decoration: InputDecoration(
+                                          hintText: '#########',
+                                          border: OutlineInputBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(10))),
+                                    ),
+                                  ),
+
+                                  // SizedBox(
+                                  //     height: 40,
+                                  //     width: 250,
+                                  //     child: ElevatedButton(
+                                  //       onPressed: () {
+                                  //         List<String> bannedCodes = [];
+                                  //         for (var country in bannedCountries) {
+                                  //           bannedCodes.add(country.countryCode);
+                                  //         }
+                                  //         showCountryPicker(
+                                  //             countryListTheme:
+                                  //                 const CountryListThemeData(
+                                  //                     bottomSheetHeight: 500),
+                                  //             context: context,
+                                  //             exclude: bannedCodes,
+                                  //             onSelect: (Country country) =>
+                                  //                 setState(() {
+                                  //                   selectedCounty =
+                                  //                       '${country.flagEmoji} ${country.name}';
+                                  //                 }));
+                                  //       },
+                                  //       child: Text(selectedCounty),
+                                  //     ))
+                                ],
+                              )
+                            ],
+                          )
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: SizedBox(
-                width: 200,
-                height: 50,
-                child: ElevatedButton(
-                    onPressed: () async {
-                      if (validCard == false) {
-                        showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                content: const SizedBox(
-                                  width: 200,
-                                  height: 100,
-                                  child: Column(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Icon(
-                                        LineIcons.exclamationTriangle,
-                                        color: Colors.red,
-                                        size: 50,
-                                      ),
-                                      Text('Invalid Credit Card Number.'),
-                                    ],
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: SizedBox(
+                  width: 200,
+                  height: 50,
+                  child: ElevatedButton(
+                      onPressed: () async {
+                        if (validCard == false) {
+                          showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  content: const SizedBox(
+                                    width: 200,
+                                    height: 100,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Icon(
+                                          LineIcons.exclamationTriangle,
+                                          color: Colors.red,
+                                          size: 50,
+                                        ),
+                                        Text('Invalid Credit Card Number.'),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text('Ok'))
-                                ],
-                              );
-                            });
-                        return;
-                      }
-                      if (teCVV.text.isEmpty || teCVV.text.length < 3) {
-                        showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                content: const SizedBox(
-                                  width: 200,
-                                  height: 100,
-                                  child: Column(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Icon(
-                                        LineIcons.exclamationTriangle,
-                                        color: Colors.red,
-                                        size: 50,
-                                      ),
-                                      Text('Invalid CVV.'),
-                                    ],
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text('Ok'))
+                                  ],
+                                );
+                              });
+                          return;
+                        }
+                        if (teCVV.text.isEmpty || teCVV.text.length < 3) {
+                          showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  content: const SizedBox(
+                                    width: 200,
+                                    height: 100,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Icon(
+                                          LineIcons.exclamationTriangle,
+                                          color: Colors.red,
+                                          size: 50,
+                                        ),
+                                        Text('Invalid CVV.'),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text('Ok'))
-                                ],
-                              );
-                            });
-                        return;
-                      }
-                      if (selectedCounty == 'Select Country') {
-                        showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                content: const SizedBox(
-                                  width: 200,
-                                  height: 100,
-                                  child: Column(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Icon(
-                                        LineIcons.exclamationTriangle,
-                                        color: Colors.red,
-                                        size: 50,
-                                      ),
-                                      Text('No Country Selected'),
-                                    ],
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text('Ok'))
+                                  ],
+                                );
+                              });
+                          return;
+                        }
+                        // if (selectedCounty == 'Select Country') {
+                        //   showDialog(
+                        //       context: context,
+                        //       builder: (BuildContext context) {
+                        //         return AlertDialog(
+                        //           content: const SizedBox(
+                        //             width: 200,
+                        //             height: 100,
+                        //             child: Column(
+                        //               mainAxisAlignment:
+                        //                   MainAxisAlignment.spaceBetween,
+                        //               children: [
+                        //                 Icon(
+                        //                   LineIcons.exclamationTriangle,
+                        //                   color: Colors.red,
+                        //                   size: 50,
+                        //                 ),
+                        //                 Text('No Country Selected'),
+                        //               ],
+                        //             ),
+                        //           ),
+                        //           actions: [
+                        //             TextButton(
+                        //                 onPressed: () {
+                        //                   Navigator.pop(context);
+                        //                 },
+                        //                 child: const Text('Ok'))
+                        //           ],
+                        //         );
+                        //       });
+                        //   return;
+                        // }
+                        if (creditCardList.any(
+                            (card) => card.cardNumber == teCardNumber.text)) {
+                          showDialog(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return AlertDialog(
+                                  content: const SizedBox(
+                                    width: 250,
+                                    height: 100,
+                                    child: Column(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Icon(
+                                          LineIcons.exclamationTriangle,
+                                          color: Colors.red,
+                                          size: 50,
+                                        ),
+                                        Text(
+                                            'This Credit Card Is Already In The List.'),
+                                      ],
+                                    ),
                                   ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text('Ok'))
-                                ],
-                              );
-                            });
-                        return;
-                      }
-                      if (creditCardList.any(
-                          (card) => card.cardNumber == teCardNumber.text)) {
-                        showDialog(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return AlertDialog(
-                                content: const SizedBox(
-                                  width: 250,
-                                  height: 100,
-                                  child: Column(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      Icon(
-                                        LineIcons.exclamationTriangle,
-                                        color: Colors.red,
-                                        size: 50,
-                                      ),
-                                      Text(
-                                          'This Credit Card Is Already In The List.'),
-                                    ],
-                                  ),
-                                ),
-                                actions: [
-                                  TextButton(
-                                      onPressed: () {
-                                        Navigator.pop(context);
-                                      },
-                                      child: const Text('Ok'))
-                                ],
-                              );
-                            });
-                        return;
-                      }
+                                  actions: [
+                                    TextButton(
+                                        onPressed: () {
+                                          Navigator.pop(context);
+                                        },
+                                        child: const Text('Ok'))
+                                  ],
+                                );
+                              });
+                          return;
+                        }
 
-                      CreditCard enteredcard = CreditCard(
-                          cardNumber: '', cardType: '', cvv: '', country: '');
+                        CreditCard enteredcard = CreditCard(
+                            cardNumber: '',
+                            cardType: '',
+                            cvv: '',
+                            holderName: '');
+                        setState(() {
+                          enteredcard.cardNumber = teCardNumber.text;
+                          enteredcard.cardType = cardType;
+                          enteredcard.cvv = teCVV.text;
+                          enteredcard.holderName = teHolderName.text;
+                          creditCardList.add(enteredcard);
+                          filteredcreditCardList.add(enteredcard);
+                          saveData(enteredcard);
+                          //Print in terminal to see if data saved. (Can be used later for loads or data extraction)
+                          retrieveData();
+                          teCardNumber.clear();
+                          teCVV.clear();
+                          teHolderName.clear();
+                          cardTypeWidget = const Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [Icon(LineIcons.creditCard)],
+                          );
+                          cardType = "";
+                        });
+                      },
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          Icon(LineIcons.plus),
+                          Text('Add Credit Card'),
+                        ],
+                      )),
+                ),
+              ),
+              const Divider(
+                indent: 5,
+                endIndent: 5,
+                thickness: 1,
+              ),
+              const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Text(
+                  'List of Credit Cards:',
+                  style: TextStyle(fontSize: 18),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
+                child: SizedBox(
+                  height: 40,
+                  child: TextField(
+                    controller: teFilter,
+                    onChanged: (value) {
                       setState(() {
-                        enteredcard.cardNumber = teCardNumber.text;
-                        enteredcard.cardType = cardType;
-                        enteredcard.cvv = teCVV.text;
-                        enteredcard.country = selectedCounty;
-                        creditCardList.add(enteredcard);
-                        filteredcreditCardList.add(enteredcard);
-                        saveData(enteredcard);
-                        //Print in terminal to see if data saved. (Can be used later for loads or data extraction)
-                        retrieveData();
-                        teCardNumber.clear();
-                        teCVV.clear();
-                        selectedCounty = 'Select Country';
-                        cardTypeWidget = const Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [Icon(LineIcons.creditCard)],
-                        );
-                        cardType = "";
+                        filteredcreditCardList = creditCardList.where((card) {
+                          return card.cardNumber
+                                  .toLowerCase()
+                                  .contains(teFilter.text.toLowerCase()) ||
+                              card.cardType
+                                  .toLowerCase()
+                                  .contains(teFilter.text.toLowerCase()) ||
+                              card.cvv
+                                  .toLowerCase()
+                                  .contains(teFilter.text.toLowerCase()) ||
+                              card.holderName
+                                  .toLowerCase()
+                                  .contains(teFilter.text.toLowerCase());
+                        }).toList();
                       });
                     },
-                    child: const Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        Icon(LineIcons.plus),
-                        Text('Add Credit Card'),
-                      ],
-                    )),
-              ),
-            ),
-            const Divider(
-              indent: 5,
-              endIndent: 5,
-              thickness: 1,
-            ),
-            const Padding(
-              padding: EdgeInsets.all(8.0),
-              child: Text(
-                'List of Credit Cards:',
-                style: TextStyle(fontSize: 18),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-              child: SizedBox(
-                height: 40,
-                child: TextField(
-                  controller: teFilter,
-                  onChanged: (value) {
-                    setState(() {
-                      filteredcreditCardList = creditCardList.where((card) {
-                        return card.cardNumber
-                                .toLowerCase()
-                                .contains(teFilter.text.toLowerCase()) ||
-                            card.cardType
-                                .toLowerCase()
-                                .contains(teFilter.text.toLowerCase()) ||
-                            card.cvv
-                                .toLowerCase()
-                                .contains(teFilter.text.toLowerCase()) ||
-                            card.country
-                                .toLowerCase()
-                                .contains(teFilter.text.toLowerCase());
-                      }).toList();
-                    });
-                  },
-                  decoration: InputDecoration(
-                    prefixIcon: const Icon(LineIcons.search),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                    border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10)),
-                    hintText: 'Search...',
+                    decoration: InputDecoration(
+                      prefixIcon: const Icon(LineIcons.search),
+                      contentPadding:
+                          const EdgeInsets.symmetric(horizontal: 16),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      hintText: 'Search...',
+                    ),
                   ),
                 ),
               ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(10),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  height: MediaQuery.of(context).size.height * 0.5,
+                  child: filteredcreditCardList.isNotEmpty
+                      ? ListView.builder(
+                          itemCount: filteredcreditCardList.length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceEvenly,
+                                      children: [
+                                        Text(filteredcreditCardList[index]
+                                            .cardNumber),
+                                        Text(filteredcreditCardList[index].cvv),
+                                        Text(filteredcreditCardList[index]
+                                            .cardType),
+                                        Text(filteredcreditCardList[index]
+                                            .holderName)
+                                      ],
+                                    ),
+                                    const Divider(
+                                      indent: 5,
+                                      endIndent: 5,
+                                    )
+                                  ],
+                                ));
+                          })
+                      : null,
                 ),
-                height: MediaQuery.of(context).size.height * 0.5,
-                child: filteredcreditCardList.isNotEmpty
-                    ? ListView.builder(
-                        itemCount: filteredcreditCardList.length,
-                        itemBuilder: (context, index) {
-                          return Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                children: [
-                                  Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceEvenly,
-                                    children: [
-                                      Text(filteredcreditCardList[index]
-                                          .cardNumber),
-                                      Text(filteredcreditCardList[index].cvv),
-                                      Text(filteredcreditCardList[index]
-                                          .cardType),
-                                      Text(
-                                          filteredcreditCardList[index].country)
-                                    ],
-                                  ),
-                                  const Divider(
-                                    indent: 5,
-                                    endIndent: 5,
-                                  )
-                                ],
-                              ));
-                        })
-                    : null,
-              ),
-            )
-          ],
+              )
+            ],
+          ),
         ),
       ),
     );
